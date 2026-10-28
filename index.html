@@ -327,7 +327,7 @@
         document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.classList.remove('active'); document.body.style.overflow = ''; } }); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.active').forEach(overlay => { overlay.classList.remove('active'); document.body.style.overflow = ''; }); } });
 
-        // QR-код (ЗАМЕНИТЕ ССЫЛКУ НА ВАШ САЙТ ПОСЛЕ ПУБЛИКАЦИИ)
+        // QR-код (https://infogto-cloud.github.io/gid-trenera/)
         const siteUrl = "https://ВАШ_ЛОГИН.github.io/ИМЯ_РЕПОЗИТОРИЯ/"; 
         new QRCode(document.getElementById("qrcode"), { text: siteUrl, width: 128, height: 128, colorDark : "#1a365d", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
     </script>
