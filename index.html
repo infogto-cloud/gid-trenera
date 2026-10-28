@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Навигатор Тренера-Преподавателя</title>
+    <title>Навигатор Тренера</title>
     <!-- Подключаем библиотеку для QR-кода -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <style>
@@ -127,6 +127,7 @@
 
     <div class="top-bar">
         <h1>Навигатор Тренера</h1>
+        <!-- Сюда вставьте ссылку на полный текстовый гайд в облаке -->
         <a href="#" class="download-btn" target="_blank">Скачать полный текстовый гайд</a>
     </div>
 
@@ -327,7 +328,7 @@
         document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.classList.remove('active'); document.body.style.overflow = ''; } }); });
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.active').forEach(overlay => { overlay.classList.remove('active'); document.body.style.overflow = ''; }); } });
 
-        // QR-код (https://infogto-cloud.github.io/gid-trenera/)
+        // Генерация QR-кода С ВАШЕЙ ССЫЛКОЙ
         const siteUrl = "https://infogto-cloud.github.io/gid-trenera/"; 
         new QRCode(document.getElementById("qrcode"), { text: siteUrl, width: 128, height: 128, colorDark : "#1a365d", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
     </script>
