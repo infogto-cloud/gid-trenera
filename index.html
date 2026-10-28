@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Навигатор Тренера-Преподавателя</title>
+    <!-- Подключаем библиотеку для QR-кода -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #eef2f5;
+            margin: 0;
+            padding: 0 0 40px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ВЕРХНЯЯ ПАНЕЛЬ */
+        .top-bar {
+            background-color: #1a365d; width: 100%; padding: 15px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-sizing: border-box; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .top-bar h1 { margin: 0; font-size: 1.2rem; }
+        .download-btn {
+            background-color: #48bb78; color: white; text-decoration: none;
+            padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;
+            transition: background 0.2s; display: flex; align-items: center;
+        }
+        .download-btn:hover { background-color: #38a169; }
+        .download-btn::before { content: '📥'; margin-right: 8px; }
+
+        .page-container {
+            padding: 0 20px; width: 100%; max-width: 1300px;
+            box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+        }
+
+        .subtitle { color: #4a5568; margin-bottom: 40px; text-align: center; max-width: 700px; line-height: 1.5; }
+
+        /* Сетка */
+        .mind-map { display: grid; grid-template-columns: 1fr 320px 1fr; gap: 30px; width: 100%; align-items: center; }
+        .side-column { display: flex; flex-direction: column; gap: 20px; }
+
+        /* ЦЕНТРАЛЬНЫЙ БЛОК */
+        .center-node {
+            background: linear-gradient(135deg, #4CAF50, #2196F3); border-radius: 20px; padding: 40px 20px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 4px solid white; position: sticky; top: 50px; color: white;
+        }
+        .center-node span { font-size: 5rem; margin-bottom: 15px; line-height: 1; }
+        .center-node h2 { margin: 0; font-size: 1.6rem; }
+        .center-node p { margin-top: 10px; font-size: 0.95rem; opacity: 0.9; }
+
+        /* Карточки */
+        .card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 6px solid #ccc;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .card h3 { margin-top: 0; margin-bottom: 10px; color: #2d3748; font-size: 1.15rem; }
+        .card-summary {
+            font-size: 0.85rem; color: #718096; line-height: 1.4; margin-bottom: 15px;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .card-btn { font-size: 0.85rem; color: #3182ce; font-weight: 600; display: inline-flex; align-items: center; }
+        .card-btn::after { content: '→'; margin-left: 5px; transition: margin 0.2s; }
+        .card:hover .card-btn::after { margin-left: 10px; }
+
+        .card.green { border-left-color: #48bb78; }
+        .card.blue { border-left-color: #4299e1; }
+        .card.orange { border-left-color: #ed8936; }
+        .card.purple { border-left-color: #9f7aea; }
+        .card.red { border-left-color: #f56565; }
+        .card.dark { border-left-color: #4a5568; }
+
+        /* БЛОК С QR-КОДОМ */
+        .qr-section {
+            margin-top: 50px; background: white; padding: 30px; border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; align-items: center;
+            gap: 30px; max-width: 600px;
+        }
+        .qr-text h3 { margin-top: 0; color: #2d3748; margin-bottom: 10px; }
+        .qr-text p { color: #4a5568; font-size: 0.95rem; line-height: 1.5; margin: 0; }
+        #qrcode { padding: 10px; background: #f7fafc; border-radius: 10px; }
+
+        /* МОДАЛЬНЫЕ ОКНА */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; transition: opacity 0.3s ease; padding: 20px; box-sizing: border-box;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content {
+            background: white; width: 100%; max-width: 700px; max-height: 90vh;
+            border-radius: 15px; padding: 35px; position: relative;
+            overflow-y: auto; box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            transform: translateY(20px); transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .close-btn { position: absolute; top: 15px; right: 20px; font-size: 2rem; color: #a0aec0; cursor: pointer; line-height: 1; }
+        .close-btn:hover { color: #e53e3e; }
+        .modal-content h2 { margin-top: 0; color: #1a365d; border-bottom: 2px solid #edf2f7; padding-bottom: 15px; margin-bottom: 20px; font-size: 1.5rem; }
+        .modal-text p { font-size: 1rem; color: #4a5568; line-height: 1.6; margin-bottom: 15px; }
+        .modal-text b { color: #2b6cb0; }
+        .modal-docs { margin-top: 25px; background: #f7fafc; padding: 25px; border-radius: 10px; }
+        .modal-docs h4 { margin-top: 0; color: #2d3748; margin-bottom: 15px; font-size: 1.1rem; }
+        .modal-docs ul { list-style: none; padding: 0; margin: 0; }
+        .modal-docs li { margin-bottom: 10px; }
+        .modal-docs a { text-decoration: none; color: #2b6cb0; background: white; display: block; padding: 12px 15px; border-radius: 8px; border: 1px solid #e2e8f0; transition: all 0.2s; font-weight: 500; }
+        .modal-docs a:hover { background: #ebf8ff; border-color: #bee3f8; transform: translateX(5px); }
+        .modal-docs a::before { content: '📄'; margin-right: 10px; }
+
+        @media (max-width: 1024px) {
+            .mind-map { grid-template-columns: 1fr; }
+            .center-node { position: relative; top: 0; order: -1; margin-bottom: 20px; }
+            .qr-section { flex-direction: column; text-align: center; }
+            .top-bar { flex-direction: column; gap: 15px; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <h1>Навигатор Тренера</h1>
+        <a href="#" class="download-btn" target="_blank">Скачать полный текстовый гайд</a>
+    </div>
+
+    <div class="page-container">
+        <p class="subtitle">Спортивная школа «Авангард». Нажмите на карточку, чтобы прочитать полную инструкцию и скачать документы.</p>
+
+        <div class="mind-map">
+            <!-- ЛЕВАЯ КОЛОНКА -->
+            <div class="side-column">
+                <div class="card dark" onclick="openModal('modal-1')">
+                    <h3>Кадры и Охрана труда</h3>
+                    <div class="card-summary">Первые 15 минут: трудовой договор, кодекс этики. Пропускной режим и ключи. Режим труда, отпуск и больничные.</div>
+                    <div class="card-btn">Подробнее</div>
+                </div>
+                <div class="card blue" onclick="openModal('modal-2')">
+                    <h3>1. Работа с обучающимися</h3>
+                    <div class="card-summary">Прием новичков только с медсправкой (60% от ФССП). Переводы по нормативным документам. Отчисления по ходатайству.</div>
+                    <div class="card-btn">Подробнее</div>
+                </div>
+            </div>
+
+            <!-- ЦЕНТР -->
+            <div class="center-node">
+                <span>🏃‍♂️🏃‍♀️</span>
+                <h2>Вы в системе!</h2>
+                <p>Ваша работа — это не только тренировки, но и правильные документы.</p>
+            </div>
+
+            <!-- ПРАВАЯ КОЛОНКА -->
+            <div class="side-column">
+                <div class="card green" onclick="openModal('modal-3')">
+                    <h3>2. Подготовка к году</h3>
+                    <div class="card-summary">Подписание нагрузки, расписания и выходных. Сдача годового плана, календарного плана соревнований и перспективного планирования.</div>
+                    <div class="card-btn">Подробнее</div>
+                </div>
+                <div class="card purple" onclick="openModal('modal-4')">
+                    <h3>4. Соревнования</h3>
+                    <div class="card-summary">Выезды только с меддопуском. Заявки на платные соревнования за 2 недели (смета). Отчеты в папку отделения и пресс-релизы.</div>
+                    <div class="card-btn">Подробнее</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- НИЖНИЙ РЯД -->
+        <div style="display: flex; justify-content: center; gap: 20px; width: 100%; margin-top: 30px; flex-wrap: wrap;">
+            <div class="card orange" style="width: calc(50% - 10px); min-width: 300px; box-sizing: border-box;" onclick="openModal('modal-5')">
+                <h3>3. Отчетность (до 20-го)</h3>
+                <div class="card-summary">Сдача журналов, листов стимулирования и заявок. Электронный журнал «Мой спорт» (72 часа). Закупка инвентаря.</div>
+                <div class="card-btn">Подробнее</div>
+            </div>
+            <div class="card red" style="width: calc(50% - 10px); min-width: 300px; box-sizing: border-box;" onclick="openModal('modal-6')">
+                <h3>5. Итоги учебного года</h3>
+                <div class="card-summary">Сдача нормативов и выполнение разрядов. Аналитический отчет (план/факт, достижения) для стимулирующих выплат.</div>
+                <div class="card-btn">Подробнее</div>
+            </div>
+        </div>
+
+        <!-- БЛОК С QR-КОДОМ -->
+        <div class="qr-section">
+            <div id="qrcode"></div>
+            <div class="qr-text">
+                <h3>Быстрый переход на телефон</h3>
+                <p>Наведите камеру смартфона на этот QR-код, чтобы открыть навигатор на телефоне. Удобно для тех, кто распечатал бумажный гайд!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛЬНЫЕ ОКНА (ПОЛНЫЙ ТЕКСТ ИЗ ГАЙДА) -->
+    <div class="modal-overlay" id="modal-1">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-1')">&times;</span>
+            <h2>Кадры и Охрана труда</h2>
+            <div class="modal-text">
+                <p><b>Первые 15 минут:</b> Подпишите трудовой договор и должностную инструкцию. Ознакомьтесь с Кодексом этики и распишитесь в журналах по охране труда у Заместителя по АХЧ.</p>
+                <p><b>Пропускной режим:</b> Ключи выдаются под роспись. Уточните у администратора, где находится журнал выдачи и куда сдавать ключи в конце смены.</p>
+                <p><b>Режим труда и отдыха:</b> 36-часовая рабочая неделя (шестидневка). Отпуск — 42 календарных дня. Диспансеризация — ежегодно (ориентировочно апрель-май).</p>
+                <p><b>Больничный:</b> Сразу уведомите Заместителя по спорту. Сдать листок нетрудоспособности после закрытия.</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Документы:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Кодекс этики служебного поведения</a></li>
+                    <li><a href="#" target="_blank">Правила внутреннего трудового распорядка</a></li>
+                    <li><a href="#" target="_blank">Заявление на отгул (шаблон)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-2">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-2')">&times;</span>
+            <h2>1. Работа с обучающимися</h2>
+            <div class="modal-text">
+                <p><b>Прием новичков:</b> Без медицинской справки зачисление невозможно! Справки хранятся в личных делах.</p>
+                <p><b>Условия открытия групп:</b> На основании приказа о наборе. Необходимо набрать минимально 60% от нормы ФССП.</p>
+                <p><b>Переводы:</b> В конце года переводятся все, кто сдал нормативы. Внутри года — только по вашему ходатайству.</p>
+                <p><b>Отчисления:</b> Окончание обучения, заявление родителей или ваше ходатайство с обоснованием.</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Положения и бланки:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Положение о приеме, зачислении и отчислении</a></li>
+                    <li><a href="#" target="_blank">Список документов для зачисления</a></li>
+                    <li><a href="#" target="_blank">Форма ходатайства о переводе</a></li>
+                    <li><a href="#" target="_blank">Форма ходатайства об отчислении</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-3">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-3')">&times;</span>
+            <h2>2. Подготовка к учебному году</h2>
+            <div class="modal-text">
+                <p>Перед началом сезона вам необходимо:</p>
+                <p>✔ Подписать нагрузку и расписание (получить свой экземпляр).</p>
+                <p>✔ Определить выходные дни.</p>
+                <p>✔ Сдать Заместителю по спорту: годовой план, календарный план соревнований и перспективное планирование.</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Формы планирования:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Годовой учебный план</a></li>
+                    <li><a href="#" target="_blank">Календарный план соревнований</a></li>
+                    <li><a href="#" target="_blank">Перспективное планирование</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-4">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-4')">&times;</span>
+            <h2>4. Соревнования</h2>
+            <div class="modal-text">
+                <p><b>Выезды:</b> Только с меддопуском и приказом. Медзаявку подписывает спортврач — ответственность на вас. Взаимодействие с федерациями — на вас.</p>
+                <p><b>Платные (целевые):</b> Заявка за <b>2 недели</b>. Пакет: заявка + положение + служебная записка + смета.</p>
+                <p><b>После выезда:</b> Отчет в папку отделения. Если тратились деньги — в бухгалтерию. Пресс-релиз до 09:00 понедельника на почту.</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Документы:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Служебная записка на выезд</a></li>
+                    <li><a href="#" target="_blank">Смета расходов</a></li>
+                    <li><a href="#" target="_blank">Постановление о нормах оплаты</a></li>
+                    <li><a href="#" target="_blank">Положение о пресс-релизах</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-5">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-5')">&times;</span>
+            <h2>3. Ежемесячная отчетность</h2>
+            <div class="modal-text">
+                <p><b>Дедлайн — 20-е число каждого месяца.</b> В администрацию сдаются: журналы посещаемости, листы стимулирующих выплат, заявки на автобус и деньги.</p>
+                <p><b>Электронный журнал «Мой спорт»:</b> заполняется в течение <b>72 часов</b> после тренировки. Данные должны совпадать с бумажным журналом.</p>
+                <p><b>Бумажный журнал:</b> ведется по Положению. Ошибки не замазывать!</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Положения:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Положение о ведении бумажного журнала</a></li>
+                    <li><a href="#" target="_blank">Форма листа стимулирующих выплат</a></li>
+                    <li><a href="#" target="_blank">Заявка на автобус</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-6">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('modal-6')">&times;</span>
+            <h2>5. Итоги учебного года</h2>
+            <div class="modal-text">
+                <p><b>Май-Июнь:</b> Сдача контрольно-переводных нормативов и оформление протоколов.</p>
+                <p><b>ФССП и разряды:</b> Успешная работа тренера оценивается по выполнению нормативов и разрядов. При выполнении разряда — сообщите методисту.</p>
+                <p><b>Аналитический отчет:</b> План/факт, количественные и качественные показатели. Это база для стимулирующих выплат.</p>
+            </div>
+            <div class="modal-docs">
+                <h4>Формы отчетности:</h4>
+                <ul>
+                    <li><a href="#" target="_blank">Форма аналитического отчета</a></li>
+                    <li><a href="#" target="_blank">График сдачи нормативов</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- СКРИПТЫ -->
+    <script>
+        // Логика модальных окон
+        function openModal(modalId) { document.getElementById(modalId).classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); document.body.style.overflow = ''; }
+        document.querySelectorAll('.modal-overlay').forEach(overlay => { overlay.addEventListener('click', (e) => { if (e.target === overlay) { overlay.classList.remove('active'); document.body.style.overflow = ''; } }); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { document.querySelectorAll('.modal-overlay.active').forEach(overlay => { overlay.classList.remove('active'); document.body.style.overflow = ''; }); } });
+
+        // QR-код (ЗАМЕНИТЕ ССЫЛКУ НА ВАШ САЙТ ПОСЛЕ ПУБЛИКАЦИИ)
+        const siteUrl = "https://ВАШ_ЛОГИН.github.io/ИМЯ_РЕПОЗИТОРИЯ/"; 
+        new QRCode(document.getElementById("qrcode"), { text: siteUrl, width: 128, height: 128, colorDark : "#1a365d", colorLight : "#ffffff", correctLevel : QRCode.CorrectLevel.H });
+    </script>
+</body>
+</html>
